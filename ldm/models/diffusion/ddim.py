@@ -143,9 +143,9 @@ class DDIMSampler(object):
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
             if i == 30:
-                ################### This sampling stage with diffusion step 30 ############################
+                ################# This sampling stage with diffusion step 30 ##########################
                 img = x_i
-                ########################### replacing the image with intermediate imagenet image ##############
+                ######################### replacing the image with intermediate imagenet image ############
             if mask is not None:
                 assert x0 is not None
                 img_orig = self.model.q_sample(x0, ts)  # TODO: deterministic forward pass?
