@@ -136,7 +136,7 @@ if __name__ == "__main__":
             for n in trange(opt.n_iter, desc="Sampling"):
                 c = model.get_learned_conditioning(opt.n_samples * [prompt])
                 shape = [4, opt.H//8, opt.W//8]
-                
+                ################### reading the image here ###################
                 img1 = cv2.imread('data/images/image7.jpg',0)
                 img1 = cv2.resize(img1,(opt.H//8,opt.W//8))
                 img2 = cv2.imread('data/images/image4.jpg',0)
@@ -145,19 +145,24 @@ if __name__ == "__main__":
                 img3 = cv2.resize(img3,(opt.H//8,opt.W//8))
                 img4 = cv2.imread('data/images/image9.jpg',0)
                 img4 = cv2.resize(img4,(opt.H//8,opt.W//8))
+                ##############################################################
                 
+                ################## Normalizing the image #######################
                 img1 = cv2.normalize(img1, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
                 img2 = cv2.normalize(img2, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
                 img3 = cv2.normalize(img3, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
                 img4 = cv2.normalize(img4, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
+                ###############################################################
 #                 print(np.max(img))
 #                 print(np.min(img))
 #                 print(img)
+                ######## converting to tensor ##############
                 transform = transforms.ToTensor()
                 img1 = transform(img1)
                 img2 = transform(img2)
                 img3 = transform(img3)
                 img4 = transform(img4)
+                ###########################################
 #                 img1 += torch.randn((opt.H//8, opt.W//8))
 #                 img2 += torch.randn((opt.H//8, opt.W//8))
 #                 img3 += torch.randn((opt.H//8, opt.W//8))
@@ -166,11 +171,13 @@ if __name__ == "__main__":
 #                 img2 /=2
 #                 img3 /=2
 #                 img4 /=2
+                ######## here the input image is rescaled to the size of the input noise ##############
                 x_i = torch.zeros((4,4,opt.H//8, opt.W//8),device=device)
                 x_i[0] = torch.cat((img1,img1,img1,img1))
                 x_i[1] = torch.cat((img2,img2,img2,img2))
                 x_i[2] = torch.cat((img3,img3,img3,img3))
                 x_i[3] = torch.cat((img4,img4,img4,img4))
+                #######################################################################################
 #                 print(x_T[0].shape)
 #                 print(img[0].shape)
 #                 x_T = x_T/255
@@ -179,7 +186,7 @@ if __name__ == "__main__":
                                                  batch_size=opt.n_samples,
                                                  shape=shape,
 #                                                  x_T = x_T,
-                                                 x_i=x_i,
+                                                 x_i=x_i, # the intermediate imagenet images passed to sampling function.
                                                  verbose=False,
                                                  unconditional_guidance_scale=opt.scale,
                                                  unconditional_conditioning=uc,
