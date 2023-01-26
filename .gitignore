@@ -1,2 +1,4 @@
 *.ckpt
 __pycache__/
+outputs/
+outputs/txt2img-samples

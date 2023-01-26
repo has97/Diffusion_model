@@ -12,7 +12,8 @@ from ldm.util import instantiate_from_config
 import torchvision.transforms as transforms
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
-
+# from ldm.models.diffusion.ddpm import 
+# from ldm.data.imagenet import ImageNetSR
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
@@ -116,6 +117,9 @@ if __name__ == "__main__":
         sampler = PLMSSampler(model)
     else:
         sampler = DDIMSampler(model)
+#     img = ImageNetSR()
+    
+#     cv2.imshow('images',img.getitem(0))
 
     os.makedirs(opt.outdir, exist_ok=True)
     outpath = opt.outdir
@@ -137,62 +141,48 @@ if __name__ == "__main__":
                 c = model.get_learned_conditioning(opt.n_samples * [prompt])
                 shape = [4, opt.H//8, opt.W//8]
                 ################### reading the image here ###################
-                img1 = cv2.imread('data/images/image7.jpg',0)
-                img1 = cv2.resize(img1,(opt.H//8,opt.W//8))
-                img2 = cv2.imread('data/images/image4.jpg',0)
-                img2 = cv2.resize(img2,(opt.H//8,opt.W//8))
-                img3 = cv2.imread('data/images/image12.jpg',0)
-                img3 = cv2.resize(img3,(opt.H//8,opt.W//8))
-                img4 = cv2.imread('data/images/image9.jpg',0)
-                img4 = cv2.resize(img4,(opt.H//8,opt.W//8))
+                img1 = cv2.imread('data/images/image1.jpg',1)
+                img1 = cv2.resize(img1,(256,256))
+                img2 = cv2.imread('data/images/image3.jpg',1)
+                img2 = cv2.resize(img2,(256,256))
+                img3 = cv2.imread('data/images/image14.jpg',1)
+                img3 = cv2.resize(img3,(256,256))
+                img4 = cv2.imread('data/images/image7.jpg',1)
+                img4 = cv2.resize(img4,(256,256))
                 ##############################################################
                 
-                ################## Normalizing the image #######################
-                img1 = cv2.normalize(img1, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
-                img2 = cv2.normalize(img2, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
-                img3 = cv2.normalize(img3, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
-                img4 = cv2.normalize(img4, None, alpha=-1, beta=1, norm_type=cv2.NORM_MINMAX,dtype=cv2.CV_32F)
+                ################## Normalizing the image #######################            
+                img1 = (img1/127.5 - 1.0).astype(np.float32)
+                img2 = (img2/127.5 - 1.0).astype(np.float32)
+                img3 = (img3/127.5 - 1.0).astype(np.float32)
+                img4 = (img4/127.5 - 1.0).astype(np.float32)
                 ###############################################################
-#                 print(np.max(img))
-#                 print(np.min(img))
-#                 print(img)
+#                
                 ######## converting to tensor ##############
                 transform = transforms.ToTensor()
-                img1 = transform(img1)
-                img2 = transform(img2)
-                img3 = transform(img3)
-                img4 = transform(img4)
+                img1 = transform(img1).to(device).reshape(1,3,256,256)
+                img2 = transform(img2).to(device).reshape(1,3,256,256)
+                img3 = transform(img3).to(device).reshape(1,3,256,256)
+                img4 = transform(img4).to(device).reshape(1,3,256,256)
                 ###########################################
-#                 img1 += torch.randn((opt.H//8, opt.W//8))
-#                 img2 += torch.randn((opt.H//8, opt.W//8))
-#                 img3 += torch.randn((opt.H//8, opt.W//8))
-#                 img4 += torch.randn((opt.H//8, opt.W//8))
-#                 img1 /=2
-#                 img2 /=2
-#                 img3 /=2
-#                 img4 /=2
-                ######## here the input image is rescaled to the size of the input noise ##############
-                x_i = torch.zeros((4,4,opt.H//8, opt.W//8),device=device)
-                x_i[0] = torch.cat((img1,img1,img1,img1))
-                x_i[1] = torch.cat((img2,img2,img2,img2))
-                x_i[2] = torch.cat((img3,img3,img3,img3))
-                x_i[3] = torch.cat((img4,img4,img4,img4))
+#                 ######## Here the image is projected to latent space and latent space embedding is extracted ##############
+                x_T = torch.zeros((4,4,opt.H//8, opt.W//8),device=device)
+                x_T = model.get_first_stage_encoding(model.encode_first_stage(torch.cat((img1,img2,img3,img4),0)))
                 #######################################################################################
-#                 print(x_T[0].shape)
-#                 print(img[0].shape)
-#                 x_T = x_T/255
+                
                 samples_ddim, _ = sampler.sample(S=opt.ddim_steps,
                                                  conditioning=c,
                                                  batch_size=opt.n_samples,
                                                  shape=shape,
-#                                                  x_T = x_T,
-                                                 x_i=x_i, # the intermediate imagenet images passed to sampling function.
+                                                 x_T = x_T,
+#                                                  x_i=x_i, # the intermediate imagenet images passed to sampling function.
                                                  verbose=False,
                                                  unconditional_guidance_scale=opt.scale,
                                                  unconditional_conditioning=uc,
                                                  eta=opt.ddim_eta)
-
+#                 print(samples_ddim.shape)
                 x_samples_ddim = model.decode_first_stage(samples_ddim)
+                print(x_samples_ddim.shape)
                 x_samples_ddim = torch.clamp((x_samples_ddim+1.0)/2.0, min=0.0, max=1.0)
 
                 for x_sample in x_samples_ddim:

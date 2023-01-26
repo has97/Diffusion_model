@@ -142,9 +142,9 @@ class DDIMSampler(object):
         for i, step in enumerate(iterator):
             index = total_steps - i - 1
             ts = torch.full((b,), step, device=device, dtype=torch.long)
-            if i == 30:
+#             if i == 5:
                 ################# This sampling stage with diffusion step 30 ##########################
-                img = x_i
+#                 img = x_i
                 ######################### replacing the image with intermediate imagenet image ############
             if mask is not None:
                 assert x0 is not None
